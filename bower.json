@@ -1,0 +1,24 @@
+{
+  "name": "play-on-scroll",
+  "version": "0.0.1",
+  "homepage": "https://github.com/develodesign/play-on-scroll",
+  "authors": [
+    "Paul Bill <paul@develodesign.co.uk>"
+  ],
+  "description": "Play/rewind videos on scroll",
+  "main": "scripts/play-on-scroll.js",
+  "keywords": [
+    "jQuery"
+  ],
+  "license": "MIT",
+  "ignore": [
+    "**/.*",
+    "node_modules",
+    "bower-components",
+    "test",
+    "tests"
+  ],
+  "dependencies": {
+    "jquery": "~2.1.4"
+  }
+}
