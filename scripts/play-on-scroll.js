@@ -70,10 +70,15 @@ var throttle = function(func, wait, options) {
 		this.$el = $el;
 		this.video = this.$el[0];
 
-		this.options = $.extend( {
+		this.ready = false;
+
+		this.options = $.extend( true, {
 
 			// Start the animation from the end and go backwards
-			reverse: false
+			reverse: false,
+
+			// Throttle timeout to stop spamming on scroll. Higher the number the lower the framerate
+			scrollThrottle: 1
 
 		}, options );
 
@@ -91,7 +96,8 @@ var throttle = function(func, wait, options) {
 
 		this.ratio = this.video.duration / ( this.windowHeight - this.videoHeight );
 
-		this.render();
+		this.ready = true;
+		//this.render();
 	};
 
 	/**
@@ -100,7 +106,7 @@ var throttle = function(func, wait, options) {
 	 */
 	PlayOnScroll.prototype.setupBindings = function(){
 
-		var throttled = throttle( $.proxy( this.onWindowScroll, this ), 100 );
+		var throttled = throttle( $.proxy( this.onWindowScroll, this ), this.options.scrollThrottle );
 
 		this.$el.on( 'loadedmetadata', $.proxy( this.initialize, this ) );
 
@@ -114,9 +120,10 @@ var throttle = function(func, wait, options) {
 	 */
 	PlayOnScroll.prototype.render = function(){
 
-		this.video.currentTime = this.currentTime;
+		if( this.ready )
+			this.video.currentTime = this.currentTime;
 
-		requestAnimationFrame( $.proxy( this.render, this ) );
+		//requestAnimationFrame( $.proxy( this.render, this ) );
 	};
 
 	/**
@@ -203,7 +210,9 @@ var throttle = function(func, wait, options) {
 
 			var $el = $( this );
 
-			$el.data( 'playOnScroll', new PlayOnScroll( $el, options ) );
+			window.playOnScrollElements.push( new PlayOnScroll( $el, options ) );
+
+			$el.data( 'playOnScroll', window.playOnScrollElements[window.playOnScrollElements.length - 1] );
 		} );
 
 		return this;
@@ -211,3 +220,20 @@ var throttle = function(func, wait, options) {
 
 
 }( jQuery );
+
+window.playOnScrollElements = [];
+
+var renderLoop = function(){
+
+	requestAnimationFrame( function(){
+
+		for( var i = 0; i < window.playOnScrollElements.length; i++ ){
+
+			window.playOnScrollElements[i].render();
+		}
+
+		renderLoop();
+	});
+};
+
+renderLoop();
