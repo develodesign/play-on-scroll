@@ -68,25 +68,34 @@ var throttle = function(func, wait, options) {
 	var PlayOnScroll = function( $el, options ){
 
 		this.$el = $el;
-		window.video = this.video = this.$el[0];
+		this.video = this.$el[0];
+
+		this.options = $.extend( {
+
+			// Start the animation from the end and go backwards
+			reverse: false
+
+		}, options );
 
 		this.setupBindings();
 	};
 
 	/**
-	 * On initialize cache the window height
+	 * On initialize cache the window height, and set the ratio along with the current start position
 	 */
 	PlayOnScroll.prototype.initialize = function(){
 
 		this.cacheHeights();
-		this.currentTime = 0;
-		this.ratio = this.video.duration / this.windowHeight;
+
+		this.currentTime = this.options.reverse ? this.video.duration : 0;
+
+		this.ratio = this.video.duration / ( this.windowHeight - this.videoHeight );
 
 		this.render();
 	};
 
 	/**
-	 * Wait until we have the loaded metadata for the video before initalising the plugin
+	 * Wait until we have the loaded metadata for the video before initialising the plugin
 	 * Bind to window events
 	 */
 	PlayOnScroll.prototype.setupBindings = function(){
@@ -99,6 +108,10 @@ var throttle = function(func, wait, options) {
 		$window.on( 'scroll', throttled );
 	};
 
+	/**
+	 * To render we just set the current time on the video, then constantly render when it can to ensure a smoother
+	 * animation.
+	 */
 	PlayOnScroll.prototype.render = function(){
 
 		this.video.currentTime = this.currentTime;
@@ -125,17 +138,17 @@ var throttle = function(func, wait, options) {
 	};
 
 	/**
-	 * - Find the position of the element in the window
-	 * - Set its current time relative to it's position in the window
-	 *
-	 *
+	 * - Ensure the video can play (ie it is visible in the browser window)
+	 * - Set its current time relative to it's position in the window, scaled to the video duration.
 	 */
 	PlayOnScroll.prototype.playOrRewind = function(){
 
 		if( this.canPlay() ){
 
 			var time = this.videoPosition * this.ratio;
-			//console.log( time );
+
+			if( ! this.options.reverse )
+				time = this.video.duration - time;
 
 			this.currentTime = time;
 		}
@@ -161,9 +174,20 @@ var throttle = function(func, wait, options) {
 			return offsetTop > windowScrollTop;
 		};
 
-		this.videoPosition = offsetTop - windowScrollTop;
+		this.setVideoPosition( offsetTop, windowScrollTop );
 
 		return underTopFold() && overBottomFold();
+	};
+
+	/**
+	 * Set the position of the video in the window.
+	 *
+	 * @param videoOffsetTop {number}
+	 * @param windowScrollTop {number}
+	 */
+	PlayOnScroll.prototype.setVideoPosition = function( videoOffsetTop, windowScrollTop ){
+
+		this.videoPosition = videoOffsetTop - windowScrollTop;
 	};
 
 	/**
