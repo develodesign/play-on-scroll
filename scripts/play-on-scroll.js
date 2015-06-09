@@ -78,7 +78,7 @@ var throttle = function(func, wait, options) {
 			reverse: false,
 
 			// Throttle timeout to stop spamming on scroll. Higher the number the lower the framerate
-			scrollThrottle: 1
+			scrollThrottle: 100
 
 		}, options );
 
@@ -120,7 +120,7 @@ var throttle = function(func, wait, options) {
 	 */
 	PlayOnScroll.prototype.render = function(){
 
-		if( this.ready )
+		if( this.ready && this.video.currentTime != this.currentTime )
 			this.video.currentTime = this.currentTime;
 
 		//requestAnimationFrame( $.proxy( this.render, this ) );
