@@ -60,7 +60,6 @@ var throttle = function(func, wait, options) {
 	var $window = $( window );
 
 	/**
-	 *
 	 * @param $el
 	 * @param options
 	 * @constructor
@@ -214,7 +213,6 @@ var throttle = function(func, wait, options) {
 
 		return this;
 	};
-
 
 }( jQuery );
 
