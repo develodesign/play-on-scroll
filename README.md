@@ -1,4 +1,4 @@
-# Play HTML5 Videos On Scroll
+# Play HTML Videos On Scroll
 
 jQuery plugin that will play video elements when you scroll down the page.
 
