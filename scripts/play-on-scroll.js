@@ -97,7 +97,6 @@ var throttle = function(func, wait, options) {
 		this.ratio = this.video.duration / ( this.windowHeight - this.videoHeight );
 
 		this.ready = true;
-		//this.render();
 	};
 
 	/**
@@ -122,8 +121,6 @@ var throttle = function(func, wait, options) {
 
 		if( this.ready && this.video.currentTime != this.currentTime )
 			this.video.currentTime = this.currentTime;
-
-		//requestAnimationFrame( $.proxy( this.render, this ) );
 	};
 
 	/**
