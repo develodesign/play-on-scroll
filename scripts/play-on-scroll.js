@@ -68,6 +68,7 @@ var throttle = function(func, wait, options) {
 
 		this.$el = $el;
 		this.video = this.$el[0];
+		this.playOnceId = "";
 
 		this.ready = false;
 
@@ -79,7 +80,9 @@ var throttle = function(func, wait, options) {
 			// Throttle timeout to stop spamming on scroll. Higher the number the lower the framerate
 			scrollThrottle: 100,
 
-			seekWithScroll: true
+			seekWithScroll: true,
+
+			playOnce: false
 
 		}, options );
 
@@ -111,13 +114,21 @@ var throttle = function(func, wait, options) {
 		if( !this.options.seekWithScroll ) {
 
 			var throttled = throttle($.proxy(this.playVideo, this), this.options.scrollThrottle);
-			$window.on('scroll', throttled);
 
 		} else {
 			var throttled = throttle($.proxy(this.onWindowScroll, this), this.options.scrollThrottle);
 
 			$window.on('resize', $.proxy(this.cacheHeights, this));
 			$window.on('scroll', throttled);
+		}
+
+		if( this.options.playOnce == true ) {
+			// When video ends, remove the scroll bidning (So it wont recheck and play again)
+			$window.on( 'scroll.playonce', throttled);
+
+			this.video.on('ended', $.proxy(this.removeScrollBindings, this));
+		} else {
+			$window.on( 'scroll', throttled);
 		}
 
 		// Switched tab, or minimized lets pause -- No resource hogging on my watch
@@ -129,23 +140,31 @@ var throttle = function(func, wait, options) {
 	};
 
 	/**
+	 * Unbinds any scroll events on the selected element
+	 */
+	PlayOnScroll.prototype.removeScrollBindings = function() {
+		this.ready = false;
+		$window.unbind( 'scroll.playonce' );
+	};
+
+	/**
 	 * Simple wrapper that will play the video when called.
 	 * Usually called from the onfocus window event.
 	 */
 	PlayOnScroll.prototype.playVideo = function() {
-		if( this.canPlay() ){
-
+		if( this.canPlay() && this.ready && this.options.seekWithScroll == false ){
 			this.video.play();
 		}
-	}
+	};
 
 	/**
 	 * Simple wrapper that pause the video when called.
 	 * Usually called from the onblur window event.
 	 */
 	PlayOnScroll.prototype.pauseVideo = function() {
-
-		this.video.pause();
+		if( this.options.seekWithScroll == false ) {
+			this.video.pause();
+		}
 	}
 
 	/**
@@ -154,8 +173,10 @@ var throttle = function(func, wait, options) {
 	 */
 	PlayOnScroll.prototype.render = function(){
 
-		if( this.ready && this.video.currentTime != this.currentTime && this.options.seekWithScroll )
+		if( this.ready && this.video.currentTime != this.currentTime && this.options.seekWithScroll ) {
+			//this.currentTime = this.currentTime.toFixed(10);
 			this.video.currentTime = this.currentTime;
+		}
 	};
 
 	/**
