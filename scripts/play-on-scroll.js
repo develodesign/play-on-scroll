@@ -77,7 +77,9 @@ var throttle = function(func, wait, options) {
 			reverse: false,
 
 			// Throttle timeout to stop spamming on scroll. Higher the number the lower the framerate
-			scrollThrottle: 100
+			scrollThrottle: 100,
+
+			seekWithScroll: true
 
 		}, options );
 
@@ -104,13 +106,47 @@ var throttle = function(func, wait, options) {
 	 */
 	PlayOnScroll.prototype.setupBindings = function(){
 
-		var throttled = throttle( $.proxy( this.onWindowScroll, this ), this.options.scrollThrottle );
+		this.$el.on('loadedmetadata', $.proxy(this.initialize, this));
 
-		this.$el.on( 'loadedmetadata', $.proxy( this.initialize, this ) );
+		if( !this.options.seekWithScroll ) {
 
-		$window.on( 'resize', $.proxy( this.cacheHeights, this ) );
-		$window.on( 'scroll', throttled );
+			var throttled = throttle($.proxy(this.playVideo, this), this.options.scrollThrottle);
+			$window.on('scroll', throttled);
+
+		} else {
+			var throttled = throttle($.proxy(this.onWindowScroll, this), this.options.scrollThrottle);
+
+			$window.on('resize', $.proxy(this.cacheHeights, this));
+			$window.on('scroll', throttled);
+		}
+
+		// Switched tab, or minimized lets pause -- No resource hogging on my watch
+		$window.on('blur', $.proxy(this.pauseVideo, this));
+
+		//Tab is in view again, lets resume the video(s)
+		$window.on('focus', $.proxy(this.playVideo, this));
+
 	};
+
+	/**
+	 * Simple wrapper that will play the video when called.
+	 * Usually called from the onfocus window event.
+	 */
+	PlayOnScroll.prototype.playVideo = function() {
+		if( this.canPlay() ){
+
+			this.video.play();
+		}
+	}
+
+	/**
+	 * Simple wrapper that pause the video when called.
+	 * Usually called from the onblur window event.
+	 */
+	PlayOnScroll.prototype.pauseVideo = function() {
+
+		this.video.pause();
+	}
 
 	/**
 	 * To render we just set the current time on the video, then constantly render when it can to ensure a smoother
@@ -118,7 +154,7 @@ var throttle = function(func, wait, options) {
 	 */
 	PlayOnScroll.prototype.render = function(){
 
-		if( this.ready && this.video.currentTime != this.currentTime )
+		if( this.ready && this.video.currentTime != this.currentTime && this.options.seekWithScroll )
 			this.video.currentTime = this.currentTime;
 	};
 
