@@ -137,6 +137,10 @@ var throttle = function(func, wait, options) {
 		//Tab is in view again, lets resume the video(s)
 		$window.on('focus', $.proxy(this.playVideo, this));
 
+		// Fixes chrome bug
+		this.video.play();
+		this.video.pause();
+
 	};
 
 	/**
@@ -174,7 +178,8 @@ var throttle = function(func, wait, options) {
 	PlayOnScroll.prototype.render = function(){
 
 		if( this.ready && this.video.currentTime != this.currentTime && this.options.seekWithScroll ) {
-			//this.currentTime = this.currentTime.toFixed(10);
+			// Another chrome fix!
+			this.currentTime = this.currentTime.toFixed(4);
 			this.video.currentTime = this.currentTime;
 		}
 	};
