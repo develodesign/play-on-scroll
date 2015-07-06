@@ -68,17 +68,22 @@ var throttle = function(func, wait, options) {
 	var PlayOnScroll = function( $el, options ){
 
 		this.$el = $el;
+
 		this.video = this.$el[0];
 
 		this.ready = false;
 
 		this.options = $.extend( true, {
 
+			// Rate in which the video catches up with the scroll event. Ranges from 0 - 1, 1 being
+			// instant 0 being nothing at all.
+			accelerationAmount: 0.1,
+
 			// Start the animation from the end and go backwards
 			reverse: false,
 
 			// Throttle timeout to stop spamming on scroll. Higher the number the lower the framerate
-			scrollThrottle: 100
+			scrollThrottle: 50
 
 		}, options );
 
@@ -92,9 +97,11 @@ var throttle = function(func, wait, options) {
 	 */
 	PlayOnScroll.prototype.initialize = function(){
 
-		this.currentTime = this.options.reverse ? this.video.duration : 0;
+		this.targetTime = this.currentTime = this.options.reverse ? this.video.duration : 0;
 
 		this.ratio = this.video.duration / ( this.windowHeight - this.videoHeight );
+
+		this.video.pause();
 
 		this.ready = true;
 	};
@@ -115,7 +122,6 @@ var throttle = function(func, wait, options) {
 		// Use eagle eye to watch the video
 		this.$el.eagleEye({
 
-			//onInvisible: $.proxy( this.onInvisible, this ),
 			onVisible: $.proxy( throttled, this )
 		});
 	};
@@ -126,8 +132,15 @@ var throttle = function(func, wait, options) {
 	 */
 	PlayOnScroll.prototype.render = function(){
 
-		if( this.ready && this.video.currentTime != this.currentTime )
+		if( this.ready && this.video.currentTime != this.targetTime ){
+
+			this.video.pause();
+
+			this.currentTime += ( this.targetTime - this.currentTime ) * this.options.accelerationAmount;
 			this.video.currentTime = this.currentTime.toFixed( 4 );
+
+			console.log( this.video.currentTime, this.targetTime );
+		}
 	};
 
 	/**
@@ -166,7 +179,7 @@ var throttle = function(func, wait, options) {
 			if( ! this.options.reverse )
 				time = this.video.duration - time;
 
-			this.currentTime = time;
+			this.targetTime = time.toFixed( 4 );
 		}
 	};
 
@@ -217,6 +230,7 @@ var renderLoop = function(){
 
 		renderLoop();
 	});
+
 };
 
 renderLoop();
