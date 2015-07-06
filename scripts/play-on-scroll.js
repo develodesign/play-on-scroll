@@ -68,7 +68,6 @@ var throttle = function(func, wait, options) {
 
 		this.$el = $el;
 		this.video = this.$el[0];
-		this.playOnceId = "";
 
 		this.ready = false;
 
@@ -78,11 +77,7 @@ var throttle = function(func, wait, options) {
 			reverse: false,
 
 			// Throttle timeout to stop spamming on scroll. Higher the number the lower the framerate
-			scrollThrottle: 100,
-
-			seekWithScroll: true,
-
-			playOnce: false
+			scrollThrottle: 100
 
 		}, options );
 
@@ -109,67 +104,13 @@ var throttle = function(func, wait, options) {
 	 */
 	PlayOnScroll.prototype.setupBindings = function(){
 
-		this.$el.on('loadedmetadata', $.proxy(this.initialize, this));
+		var throttled = throttle( $.proxy( this.onWindowScroll, this ), this.options.scrollThrottle );
 
-		if( !this.options.seekWithScroll ) {
+		this.$el.on( 'loadedmetadata', $.proxy( this.initialize, this ) );
 
-			var throttled = throttle($.proxy(this.playVideo, this), this.options.scrollThrottle);
-
-		} else {
-			var throttled = throttle($.proxy(this.onWindowScroll, this), this.options.scrollThrottle);
-
-			$window.on('resize', $.proxy(this.cacheHeights, this));
-			$window.on('scroll', throttled);
-		}
-
-		if( this.options.playOnce == true ) {
-			// When video ends, remove the scroll bidning (So it wont recheck and play again)
-			$window.on( 'scroll.playonce', throttled);
-
-			this.video.on('ended', $.proxy(this.removeScrollBindings, this));
-		} else {
-			$window.on( 'scroll', throttled);
-		}
-
-		// Switched tab, or minimized lets pause -- No resource hogging on my watch
-		$window.on('blur', $.proxy(this.pauseVideo, this));
-
-		//Tab is in view again, lets resume the video(s)
-		$window.on('focus', $.proxy(this.playVideo, this));
-
-		// Fixes chrome bug
-		this.video.play();
-		this.video.pause();
-
+		$window.on( 'resize', $.proxy( this.cacheHeights, this ) );
+		$window.on( 'scroll', throttled );
 	};
-
-	/**
-	 * Unbinds any scroll events on the selected element
-	 */
-	PlayOnScroll.prototype.removeScrollBindings = function() {
-		this.ready = false;
-		$window.unbind( 'scroll.playonce' );
-	};
-
-	/**
-	 * Simple wrapper that will play the video when called.
-	 * Usually called from the onfocus window event.
-	 */
-	PlayOnScroll.prototype.playVideo = function() {
-		if( this.canPlay() && this.ready && this.options.seekWithScroll == false ){
-			this.video.play();
-		}
-	};
-
-	/**
-	 * Simple wrapper that pause the video when called.
-	 * Usually called from the onblur window event.
-	 */
-	PlayOnScroll.prototype.pauseVideo = function() {
-		if( this.options.seekWithScroll == false ) {
-			this.video.pause();
-		}
-	}
 
 	/**
 	 * To render we just set the current time on the video, then constantly render when it can to ensure a smoother
@@ -177,11 +118,8 @@ var throttle = function(func, wait, options) {
 	 */
 	PlayOnScroll.prototype.render = function(){
 
-		if( this.ready && this.video.currentTime != this.currentTime && this.options.seekWithScroll ) {
-			// Another chrome fix!
-			this.currentTime = this.currentTime.toFixed(4);
-			this.video.currentTime = this.currentTime;
-		}
+		if( this.ready && this.video.currentTime != this.currentTime )
+			this.video.currentTime = this.currentTime.toFixed( 4 );
 	};
 
 	/**
