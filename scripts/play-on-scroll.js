@@ -9,6 +9,7 @@
  * @param func
  * @param wait
  * @param options
+ * @dependencies jQuery, EagleEye
  * @returns {Function}
  */
 var throttle = function(func, wait, options) {
@@ -81,6 +82,8 @@ var throttle = function(func, wait, options) {
 
 		}, options );
 
+		this.cacheHeights();
+
 		this.setupBindings();
 	};
 
@@ -88,8 +91,6 @@ var throttle = function(func, wait, options) {
 	 * On initialize cache the window height, and set the ratio along with the current start position
 	 */
 	PlayOnScroll.prototype.initialize = function(){
-
-		this.cacheHeights();
 
 		this.currentTime = this.options.reverse ? this.video.duration : 0;
 
@@ -104,12 +105,19 @@ var throttle = function(func, wait, options) {
 	 */
 	PlayOnScroll.prototype.setupBindings = function(){
 
-		var throttled = throttle( $.proxy( this.onWindowScroll, this ), this.options.scrollThrottle );
-
 		this.$el.on( 'loadedmetadata', $.proxy( this.initialize, this ) );
 
 		$window.on( 'resize', $.proxy( this.cacheHeights, this ) );
-		$window.on( 'scroll', throttled );
+
+		// Throttle the play or rewind call.
+		var throttled = throttle( $.proxy( this.onVisible, this ), this.options.scrollThrottle );
+
+		// Use eagle eye to watch the video
+		this.$el.eagleEye({
+
+			//onInvisible: $.proxy( this.onInvisible, this ),
+			onVisible: $.proxy( throttled, this )
+		});
 	};
 
 	/**
@@ -134,19 +142,24 @@ var throttle = function(func, wait, options) {
 	/**
 	 * Called when the window is scrolling
 	 *
+	 * - Set the video position
+	 * - Play or rewind the video
+	 *
+	 * @param $el {object}
+	 * @param dimensions {object}
 	 */
-	PlayOnScroll.prototype.onWindowScroll = function(){
+	PlayOnScroll.prototype.onVisible = function( $el, dimensions ){
 
+		this.setVideoPosition( dimensions.el.offsetTop, dimensions.window.scrollTop );
 		this.playOrRewind();
 	};
 
 	/**
-	 * - Ensure the video can play (ie it is visible in the browser window)
-	 * - Set its current time relative to it's position in the window, scaled to the video duration.
+	 * Set the video's current time relative to it's position in the window, scaled to the video duration.
 	 */
 	PlayOnScroll.prototype.playOrRewind = function(){
 
-		if( this.canPlay() ){
+		if( this.ready ){
 
 			var time = this.videoPosition * this.ratio;
 
@@ -155,31 +168,6 @@ var throttle = function(func, wait, options) {
 
 			this.currentTime = time;
 		}
-	};
-
-	/**
-	 * Video should only play if the video is fully inside the window
-	 */
-	PlayOnScroll.prototype.canPlay = function(){
-
-		var offsetTop = this.$el.offset().top;
-		var windowScrollTop = $window.scrollTop();
-		var windowHeight = this.windowHeight;
-		var videoHeight = this.videoHeight;
-
-		var overBottomFold = function(){
-
-			return offsetTop + videoHeight < windowScrollTop + windowHeight;
-		};
-
-		var underTopFold = function(){
-
-			return offsetTop > windowScrollTop;
-		};
-
-		this.setVideoPosition( offsetTop, windowScrollTop );
-
-		return underTopFold() && overBottomFold();
 	};
 
 	/**
