@@ -138,8 +138,6 @@ var throttle = function(func, wait, options) {
 
 			this.currentTime += ( this.targetTime - this.currentTime ) * this.options.accelerationAmount;
 			this.video.currentTime = this.currentTime.toFixed( 4 );
-
-			console.log( this.video.currentTime, this.targetTime );
 		}
 	};
 
